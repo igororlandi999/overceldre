@@ -1,18 +1,19 @@
 {
   "2026-01": {
-    "vendas_diretas": 2222,
-    "marketplaces": 22220,
-    "comissoes": 2220,
-    "devolucoes": 22220,
-    "cmv": 22220,
+    "vendas_diretas": 999,
+    "marketplaces": 999,
+    "comissoes": 999,
+    "devolucoes": 999,
+    "cmv": 9,
     "pessoal": 22220,
     "fixas": 22220,
     "administrativas": 22220,
-    "frete_venda": 22220,
+    "frete_venda": 99,
     "simples": 0,
     "dividendos": 0,
     "saldo_caixa": 0,
-    "estoque": 0
+    "estoque": 0,
+    "simples_pct": 99
   },
   "2026-02": {
     "vendas_diretas": 0,
