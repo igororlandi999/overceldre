@@ -72,44 +72,42 @@
 <script>
 'use strict';
 
-/* ─── CONFIG ─────────────────────────────────────────────── */
 var ADMIN_PASSWORD = 'admin123';
 var DASH = '\u2014';
 
 /* ─── ESTRUTURA DA DRE ───────────────────────────────────── */
 var DRE_STRUCTURE = [
+
   { type: 'section', label: '(+) RECEITA BRUTA' },
-  { type: 'sub', key: 'vendas_diretas',  label: 'Vendas diretas' },
-  { type: 'sub', key: 'marketplaces',    label: 'Marketplaces (l\u00edquido de comiss\u00e3o da plataforma)' },
-  { type: 'total', id: 'receita_bruta',  label: '= RECEITA BRUTA TOTAL', color: 'positive' },
+  { type: 'sub', key: 'vendas_diretas', label: 'Vendas diretas' },
+  { type: 'sub', key: 'marketplaces',   label: 'Marketplaces (l\u00edquido de comiss\u00e3o da plataforma)' },
+  { type: 'total', id: 'receita_bruta', label: '= RECEITA BRUTA TOTAL', color: 'positive' },
 
   { type: 'section', label: '(-) DEDU\u00c7\u00d5ES DA RECEITA' },
-  { type: 'sub', key: 'comissoes',       label: 'Comiss\u00f5es' },
-  { type: 'sub', key: 'devolucoes',      label: 'Devolu\u00e7\u00f5es' },
+  { type: 'sub',     key: 'comissoes',   label: 'Comiss\u00f5es' },
+  { type: 'sub',     key: 'devolucoes',  label: 'Devolu\u00e7\u00f5es' },
+  { type: 'sub',     key: 'frete_venda', label: 'Frete de venda' },
+  { type: 'sub-pct', key: 'simples_pct', label: 'Simples Nacional', calcId: 'simples_valor' },
   { type: 'total', id: 'receita_liquida', label: '= RECEITA L\u00cdQUIDA', color: 'dynamic' },
 
   { type: 'section', label: '(-) CMV \u2014 CUSTO DOS PRODUTOS VENDIDOS' },
-  { type: 'sub', key: 'cmv',             label: 'Custo dos produtos vendidos' },
+  { type: 'sub', key: 'cmv', label: 'Custo dos produtos vendidos' },
   { type: 'total-grand', id: 'lucro_bruto', label: '= LUCRO BRUTO', color: 'dynamic', showPct: true },
 
   { type: 'section', label: '(-) DESPESAS OPERACIONAIS' },
   { type: 'sub', key: 'pessoal',         label: 'Pessoal (sal\u00e1rios, INSS)' },
   { type: 'sub', key: 'fixas',           label: 'Fixas (aluguel, contabilidade)' },
   { type: 'sub', key: 'administrativas', label: 'Administrativas (banc\u00e1rias, materiais)' },
-  { type: 'sub', key: 'frete_venda',     label: 'Frete de venda' },
   { type: 'total-grand', id: 'ebitda',   label: '= RESULTADO OPERACIONAL (EBITDA)', color: 'dynamic', showPct: false },
 
-  { type: 'section', label: '(-) IMPOSTOS SOBRE OPERA\u00c7\u00c3O' },
-  { type: 'sub', key: 'simples',         label: 'Simples Nacional' },
-  { type: 'total-grand', id: 'res_apos_imp', label: '= RESULTADO OPERACIONAL AP\u00d3S IMPOSTOS', color: 'dynamic', showPct: false },
-
   { type: 'section', label: '(-) RETIRADAS DE S\u00d3CIOS' },
-  { type: 'sub', key: 'dividendos',      label: 'Antecipa\u00e7\u00e3o de dividendos' },
+  { type: 'sub', key: 'dividendos', label: 'Antecipa\u00e7\u00e3o de dividendos' },
   { type: 'total-grand', id: 'res_liquido', label: '= RESULTADO L\u00cdQUIDO', color: 'dynamic', showPct: true },
 
   { type: 'divider' },
-  { type: 'info', key: 'saldo_caixa',    label: '(informa\u00e7\u00e3o) Saldo de caixa acumulado' },
-  { type: 'info', key: 'estoque',        label: '(informa\u00e7\u00e3o) Estoque em R$' }
+  { type: 'info', key: 'saldo_caixa', label: '(informa\u00e7\u00e3o) Saldo de caixa acumulado' },
+  { type: 'info', key: 'estoque',     label: '(informa\u00e7\u00e3o) Estoque em R$' }
+
 ];
 
 /* ─── STATE ──────────────────────────────────────────────── */
@@ -136,22 +134,22 @@ function formatMonthLabel(key) {
   return names[m - 1] + ' ' + y;
 }
 
-/* ─── CALCULATIONS ───────────────────────────────────────── */
+/* ─── CÁLCULOS ───────────────────────────────────────────── */
 function calcTotals(d) {
   var receita_bruta   = (d.vendas_diretas || 0) + (d.marketplaces || 0);
-  var deducoes        = (d.comissoes || 0) + (d.devolucoes || 0);
+  var simples_valor   = receita_bruta * ((d.simples_pct || 0) / 100);
+  var deducoes        = (d.comissoes || 0) + (d.devolucoes || 0) + (d.frete_venda || 0) + simples_valor;
   var receita_liquida = receita_bruta - deducoes;
   var lucro_bruto     = receita_liquida - (d.cmv || 0);
-  var desp_op         = (d.pessoal || 0) + (d.fixas || 0) + (d.administrativas || 0) + (d.frete_venda || 0);
+  var desp_op         = (d.pessoal || 0) + (d.fixas || 0) + (d.administrativas || 0);
   var ebitda          = lucro_bruto - desp_op;
-  var res_apos_imp    = ebitda - (d.simples || 0);
-  var res_liquido     = res_apos_imp - (d.dividendos || 0);
+  var res_liquido     = ebitda - (d.dividendos || 0);
   return {
     receita_bruta:   receita_bruta,
+    simples_valor:   simples_valor,
     receita_liquida: receita_liquida,
     lucro_bruto:     lucro_bruto,
     ebitda:          ebitda,
-    res_apos_imp:    res_apos_imp,
     res_liquido:     res_liquido
   };
 }
@@ -180,7 +178,6 @@ function renderMonthNav() {
   var months = generateMonths();
   var nav    = document.getElementById('month-nav');
   nav.innerHTML = '';
-
   months.forEach(function(m) {
     var btn = document.createElement('button');
     btn.className   = 'month-tab' + (m === currentMonth ? ' active' : '');
@@ -248,15 +245,26 @@ function renderHeaderActions() {
   }
 }
 
-/* ─── RENDER DRE ─────────────────────────────────────────── */
+/* ─── EMPTY MONTH ────────────────────────────────────────── */
 function emptyMonth() {
   return {
-    vendas_diretas: 0, marketplaces: 0, comissoes: 0, devolucoes: 0,
-    cmv: 0, pessoal: 0, fixas: 0, administrativas: 0, frete_venda: 0,
-    simples: 0, dividendos: 0, saldo_caixa: 0, estoque: 0
+    vendas_diretas:  0,
+    marketplaces:    0,
+    comissoes:       0,
+    devolucoes:      0,
+    frete_venda:     0,
+    simples_pct:     0,
+    cmv:             0,
+    pessoal:         0,
+    fixas:           0,
+    administrativas: 0,
+    dividendos:      0,
+    saldo_caixa:     0,
+    estoque:         0
   };
 }
 
+/* ─── RENDER DRE ─────────────────────────────────────────── */
 function renderDRE() {
   var container = document.getElementById('dre-container');
   var data      = allData[currentMonth] || emptyMonth();
@@ -268,27 +276,21 @@ function renderDRE() {
   var wrapper = document.createElement('div');
   wrapper.className = 'dre-wrapper';
 
-  /* header da tabela */
-  var dreHead  = document.createElement('div');
+  var dreHead   = document.createElement('div');
   dreHead.className = 'dre-header';
-
   var titleSpan = document.createElement('span');
   titleSpan.className   = 'dre-header-title';
   titleSpan.textContent = 'Demonstrativo de Resultado do Exerc\u00edcio';
-
   var monthSpan = document.createElement('span');
   monthSpan.className   = 'dre-month-label';
   monthSpan.textContent = formatMonthLabel(currentMonth);
-
   dreHead.appendChild(titleSpan);
   dreHead.appendChild(monthSpan);
   wrapper.appendChild(dreHead);
 
-  /* table */
   var table   = document.createElement('table');
   var thead   = document.createElement('thead');
   var headRow = document.createElement('tr');
-
   ['Linha DRE', 'Valor (R$)', '% Rec. Bruta'].forEach(function(h, i) {
     var th = document.createElement('th');
     th.textContent = h;
@@ -303,6 +305,7 @@ function renderDRE() {
   DRE_STRUCTURE.forEach(function(row) {
     var tr = document.createElement('tr');
 
+    /* ── section ── */
     if (row.type === 'section') {
       tr.className = 'row-section-header';
       var td = document.createElement('td');
@@ -311,6 +314,7 @@ function renderDRE() {
       tr.appendChild(td);
     }
 
+    /* ── divider ── */
     else if (row.type === 'divider') {
       tr.className = 'row-section-header';
       var td = document.createElement('td');
@@ -319,6 +323,7 @@ function renderDRE() {
       tr.appendChild(td);
     }
 
+    /* ── sub (valor R$) ── */
     else if (row.type === 'sub') {
       tr.className = 'row-sub';
       var val      = data[row.key] !== undefined ? data[row.key] : 0;
@@ -335,11 +340,11 @@ function renderDRE() {
         tdInp.className = 'cell-input';
         tdInp.setAttribute('colspan', '2');
         var inp = document.createElement('input');
-        inp.type          = 'number';
-        inp.className     = 'edit-input';
-        inp.step          = '0.01';
-        inp.dataset.key   = row.key;
-        inp.value         = val;
+        inp.type        = 'number';
+        inp.className   = 'edit-input';
+        inp.step        = '0.01';
+        inp.dataset.key = row.key;
+        inp.value       = val;
         inp.addEventListener('input', onInputChange);
         tdInp.appendChild(inp);
         tr.appendChild(tdInp);
@@ -348,7 +353,6 @@ function renderDRE() {
         tdVal.className   = 'cell-value ' + (val === 0 ? 'val-zero' : 'val-neutral');
         tdVal.textContent = val === 0 ? DASH : fmtBRL(val);
         tr.appendChild(tdVal);
-
         var tdPct = document.createElement('td');
         tdPct.className   = 'cell-pct';
         tdPct.textContent = (val && rb) ? fmtPct(val, rb) : DASH;
@@ -356,8 +360,73 @@ function renderDRE() {
       }
     }
 
+    /* ── sub-pct (Simples Nacional: % à esquerda, R$ à direita) ── */
+    else if (row.type === 'sub-pct') {
+      tr.className = 'row-sub';
+      var pctVal  = data[row.key] !== undefined ? data[row.key] : 0;
+      var calcVal = totals[row.calcId] || 0;
+
+      /* célula esquerda: label + % */
+      var tdLabel  = document.createElement('td');
+      var labelDiv = document.createElement('div');
+      labelDiv.className   = 'cell-label';
+      labelDiv.style.cssText = 'display:flex;align-items:center;gap:10px;';
+
+      var labelTxt = document.createElement('span');
+      labelTxt.textContent = row.label;
+      labelDiv.appendChild(labelTxt);
+
+      if (isEditMode) {
+        var pctWrap = document.createElement('div');
+        pctWrap.style.cssText = 'display:flex;align-items:center;gap:4px;';
+
+        var inp = document.createElement('input');
+        inp.type        = 'number';
+        inp.className   = 'edit-input';
+        inp.step        = '0.01';
+        inp.min         = '0';
+        inp.max         = '100';
+        inp.placeholder = '0.00';
+        inp.dataset.key = row.key;
+        inp.value       = pctVal;
+        inp.style.width = '90px';
+        inp.addEventListener('input', onInputChange);
+
+        var sign = document.createElement('span');
+        sign.textContent   = '%';
+        sign.style.cssText = 'font-family:var(--font-mono);color:var(--text-muted);font-size:14px;';
+
+        pctWrap.appendChild(inp);
+        pctWrap.appendChild(sign);
+        labelDiv.appendChild(pctWrap);
+      } else {
+        if (pctVal > 0) {
+          var pctBadge = document.createElement('span');
+          pctBadge.textContent   = pctVal + '%';
+          pctBadge.style.cssText = 'font-family:var(--font-mono);font-size:13px;color:var(--text-muted);';
+          labelDiv.appendChild(pctBadge);
+        }
+      }
+
+      tdLabel.appendChild(labelDiv);
+      tr.appendChild(tdLabel);
+
+      /* célula direita: valor R$ calculado */
+      var tdVal = document.createElement('td');
+      tdVal.className      = 'cell-value ' + (calcVal === 0 ? 'val-zero' : 'val-neutral');
+      tdVal.dataset.calcid = row.calcId;
+      tdVal.textContent    = calcVal === 0 ? DASH : fmtBRL(calcVal);
+      tr.appendChild(tdVal);
+
+      var tdPct = document.createElement('td');
+      tdPct.className   = 'cell-pct';
+      tdPct.textContent = (calcVal && rb) ? fmtPct(calcVal, rb) : DASH;
+      tr.appendChild(tdPct);
+    }
+
+    /* ── total ── */
     else if (row.type === 'total') {
-      tr.className  = 'row-total';
+      tr.className = 'row-total';
       var val  = totals[row.id];
       var cls  = row.color === 'positive' ? 'val-positive' : valClass(val);
       var pctT = row.id === 'receita_bruta' ? '100.0%' : (rb ? fmtPct(val, rb) : DASH);
@@ -380,6 +449,7 @@ function renderDRE() {
       tr.appendChild(tdPct);
     }
 
+    /* ── total-grand ── */
     else if (row.type === 'total-grand') {
       tr.className = 'row-grand-total';
       var val  = totals[row.id];
@@ -392,8 +462,8 @@ function renderDRE() {
       ld.textContent = row.label;
       if (row.showPct && rb) {
         var badge = document.createElement('span');
-        badge.style.cssText   = 'color:var(--text-muted);font-size:11px;font-weight:400;margin-left:10px;';
-        badge.textContent     = '(' + pctT + ')';
+        badge.style.cssText = 'color:var(--text-muted);font-size:11px;font-weight:400;margin-left:10px;';
+        badge.textContent   = '(' + pctT + ')';
         ld.appendChild(badge);
       }
       tdLabel.appendChild(ld);
@@ -410,6 +480,7 @@ function renderDRE() {
       tr.appendChild(tdPct);
     }
 
+    /* ── info ── */
     else if (row.type === 'info') {
       tr.className = 'row-info';
       var val      = data[row.key] !== undefined ? data[row.key] : 0;
@@ -439,7 +510,6 @@ function renderDRE() {
         tdVal.className   = 'cell-value';
         tdVal.textContent = val === 0 ? DASH : fmtBRL(val);
         tr.appendChild(tdVal);
-
         var tdPct = document.createElement('td');
         tdPct.className   = 'cell-pct';
         tdPct.textContent = DASH;
@@ -484,10 +554,12 @@ function onInputChange() {
   inputs.forEach(function(inp) {
     draft[inp.dataset.key] = parseFloat(inp.value) || 0;
   });
+
   var base = Object.assign({}, allData[currentMonth] || emptyMonth(), draft);
   var t    = calcTotals(base);
   var rb   = t.receita_bruta;
 
+  /* atualiza totais */
   document.querySelectorAll('.row-total, .row-grand-total').forEach(function(tr) {
     var ld = tr.querySelector('.cell-label');
     if (!ld) return;
@@ -511,6 +583,16 @@ function onInputChange() {
         if (sp) sp.textContent = '(' + pctT + ')';
       }
     });
+  });
+
+  /* atualiza valor R$ do Simples em tempo real */
+  document.querySelectorAll('[data-calcid]').forEach(function(td) {
+    var cid = td.dataset.calcid;
+    if (t[cid] !== undefined) {
+      var v = t[cid];
+      td.textContent = v === 0 ? DASH : fmtBRL(v);
+      td.className   = 'cell-value ' + (v === 0 ? 'val-zero' : 'val-neutral');
+    }
   });
 }
 
@@ -597,7 +679,9 @@ function loadData() {
 /* ─── SAVE DATA ──────────────────────────────────────────── */
 function saveData() {
   githubConfig = loadConfig();
+
   if (!githubConfig.user || !githubConfig.repo || !githubConfig.pat) {
+    showStatus('Configure o GitHub primeiro.', 'error');
     openModal('modal-config');
     return;
   }
@@ -620,6 +704,8 @@ function saveData() {
   })
   .then(function(res) {
     if (res.ok) return res.json().then(function(d) { return d.sha; });
+    if (res.status === 401) throw new Error('Token inv\u00e1lido. Gere um novo PAT.');
+    if (res.status === 403) throw new Error('Token sem permiss\u00e3o. Marque o escopo "repo".');
     if (res.status === 404) return null;
     throw new Error('Erro ao buscar arquivo: ' + res.status);
   })
@@ -648,8 +734,8 @@ function saveData() {
     renderAll();
   })
   .catch(function(e) {
-    showStatus('Erro ao salvar: ' + e.message, 'error');
-    console.error(e);
+    showStatus('Erro: ' + e.message, 'error');
+    console.error('SAVE ERROR:', e);
   });
 }
 
